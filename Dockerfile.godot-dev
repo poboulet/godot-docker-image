@@ -1,0 +1,32 @@
+FROM ubuntu:latest
+
+ARG GODOT_VERSION=4.3
+ARG MONO=false
+
+# Install necessary packages
+# We need to run with xvfb and graphics libs because gdUnit depends on it for integration tests
+RUN apt-get update && \
+    apt-get install -y \
+    git \
+    git-lfs \
+    wget \
+    unzip \
+    xvfb \
+    zip \
+    mesa-utils && \
+    if [ "$MONO" = "true" ]; then \
+        apt-get install -y mono-complete dotnet-sdk-8.0; \
+    fi
+
+# Set environment variables to prevent runtime errors
+ENV XDG_RUNTIME_DIR=/tmp/runtime
+ENV LIBGL_ALWAYS_SOFTWARE=true
+RUN mkdir -p /tmp/runtime
+
+# Install Godot and export templates
+COPY setup_godot.sh /usr/local/bin/setup_godot.sh
+RUN chmod +x /usr/local/bin/setup_godot.sh
+RUN /usr/local/bin/setup_godot.sh $GODOT_VERSION $MONO
+
+# Set the default command (if needed)
+CMD ["/bin/bash"]
