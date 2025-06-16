@@ -13,10 +13,15 @@ RUN apt-get update && \
     unzip \
     xvfb \
     zip \
+    wine \
     mesa-utils && \
     if [ "$MONO" = "true" ]; then \
         apt-get install -y mono-complete dotnet-sdk-8.0; \
     fi
+
+# Download rcedit change the windows build icon
+RUN wget https://github.com/electron/rcedit/releases/download/v1.1.1/rcedit-x64.exe -O /usr/local/bin/rcedit.exe && \
+    chmod +x /usr/local/bin/rcedit.exe
 
 # Set environment variables to prevent runtime errors
 ENV XDG_RUNTIME_DIR=/tmp/runtime
