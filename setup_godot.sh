@@ -10,14 +10,14 @@ if [ "$MONO" = "true" ]; then
     TEMPLATE_URL="https://github.com/godotengine/godot-builds/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_mono_export_templates.tpz"
     INSTALL_DIR="/usr/local/bin/Godot_v${GODOT_VERSION}-stable_mono_linux_x86_64"
     TEMPLATE_DIR="/godot/export_templates/${GODOT_VERSION}.stable.mono/"
-    SYMLINK_TEMPLATE_DIR="/root/.local/share/godot/export_templates/${GODOT_VERSION}.stable.mono/"
+    SYMLINK_TEMPLATE_DIR="/root/.local/share/godot/export_templates/"
     EXECUTABLE_NAME="Godot_v${GODOT_VERSION}-stable_mono_linux.x86_64"
 else
     DOWNLOAD_URL="https://github.com/godotengine/godot-builds/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
     TEMPLATE_URL="https://github.com/godotengine/godot-builds/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_export_templates.tpz"
     INSTALL_DIR="/usr/local/bin"
     TEMPLATE_DIR="/godot/export_templates/${GODOT_VERSION}.stable/"
-    SYMLINK_TEMPLATE_DIR="/root/.local/share/godot/export_templates/${GODOT_VERSION}.stable/"
+    SYMLINK_TEMPLATE_DIR="/root/.local/share/godot/export_templates/"
     EXECUTABLE_NAME="Godot_v${GODOT_VERSION}-stable_linux.x86_64"
 fi
 
