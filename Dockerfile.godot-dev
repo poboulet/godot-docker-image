@@ -3,6 +3,8 @@ FROM ubuntu:latest
 ARG GODOT_VERSION=4.4.1
 ARG MONO=false
 
+RUN dpkg --add-architecture i386
+
 # Install necessary packages
 # We need to run with xvfb and graphics libs because gdUnit depends on it for integration tests
 RUN apt-get update && \
@@ -14,6 +16,7 @@ RUN apt-get update && \
     xvfb \
     zip \
     wine \
+    wine32 \
     mesa-utils && \
     if [ "$MONO" = "true" ]; then \
         apt-get install -y mono-complete dotnet-sdk-8.0; \
@@ -22,6 +25,10 @@ RUN apt-get update && \
 # Download rcedit change the windows build icon
 RUN wget https://github.com/electron/rcedit/releases/download/v1.1.1/rcedit-x64.exe -O /usr/local/bin/rcedit.exe && \
     chmod +x /usr/local/bin/rcedit.exe
+
+# Initialize Wine (this creates the wine prefix and installs necessary components)
+RUN wine --version && \
+    wineboot --init
 
 # Set environment variables to prevent runtime errors
 ENV XDG_RUNTIME_DIR=/tmp/runtime
