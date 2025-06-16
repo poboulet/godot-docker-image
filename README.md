@@ -54,7 +54,7 @@ docker build -t godot-dev -f ./Dockerfile.godot-dev --build-arg MONO=true --buil
 
 ### Arguments
 - ```MONO```: Set this to `true` to include the Mono version of Godot. The default value is `false`.
-- ```GODOT_VERSION```: Specify the version of Godot to be used. The default is version `4.3`.
+- ```GODOT_VERSION```: Specify the version of Godot to be used. The default is version `4.4.1`.
 
 ### Running the Custom-Built Image
 
