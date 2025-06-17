@@ -9,19 +9,25 @@ RUN dpkg --add-architecture i386
 # We need to run with xvfb and graphics libs because gdUnit depends on it for integration tests
 RUN apt-get update && \
     apt-get install -y \
-    git \
-    git-lfs \
-    wget \
-    unzip \
-    xvfb \
-    zip \
-    wine \
-    wine32 \
-    gvfs-daemons \
-    mesa-utils && \
-    if [ "$MONO" = "true" ]; then \
-        apt-get install -y mono-complete dotnet-sdk-8.0; \
-    fi
+        git \
+        git-lfs \
+        wget \
+        unzip \
+        xvfb \
+        zip \
+        wine \
+        wine32 \
+        gvfs-backends \
+        mesa-utils && \
+    bash -c '\
+        if [ "$MONO" = "true" ]; then \
+            apt-get install -y mono-complete && \
+            wget https://dot.net/v1/dotnet-install.sh -O dotnet-install.sh && \
+            chmod +x dotnet-install.sh && \
+            ./dotnet-install.sh --channel 8.0; \
+        fi' && \
+    rm -rf /var/lib/apt/lists/*
+
 
 # Download rcedit change the windows build icon
 RUN wget https://github.com/electron/rcedit/releases/download/v2.0.0/rcedit-x86.exe -O /usr/local/bin/rcedit.exe && \
@@ -34,6 +40,8 @@ RUN wine --version && \
 # Set environment variables to prevent runtime errors
 ENV XDG_RUNTIME_DIR=/tmp/runtime
 ENV LIBGL_ALWAYS_SOFTWARE=true
+ENV DOTNET_ROOT=/root/.dotnet
+ENV PATH=$PATH:$DOTNET_ROOT:$DOTNET_ROOT/tools
 RUN mkdir -p /tmp/runtime
 
 # Install Godot and export templates
