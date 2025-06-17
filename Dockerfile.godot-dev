@@ -17,6 +17,7 @@ RUN apt-get update && \
     zip \
     wine \
     wine32 \
+    gvfs-daemons \
     mesa-utils && \
     if [ "$MONO" = "true" ]; then \
         apt-get install -y mono-complete dotnet-sdk-8.0; \
@@ -39,6 +40,12 @@ RUN mkdir -p /tmp/runtime
 COPY setup_godot.sh /usr/local/bin/setup_godot.sh
 RUN chmod +x /usr/local/bin/setup_godot.sh
 RUN /usr/local/bin/setup_godot.sh $GODOT_VERSION $MONO
+
+# Run Godot once to create editor settings
+RUN godot --headless --quit
+
+# Set rcedit path in editor settings
+RUN sed -i 's|export/windows/rcedit = ""|export/windows/rcedit = "/usr/local/bin/rcedit.exe"|g' ~/.config/godot/editor_settings-4.4.tres
 
 # Set the default command (if needed)
 CMD ["/bin/bash"]
