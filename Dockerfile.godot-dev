@@ -23,7 +23,7 @@ RUN apt-get update && \
     fi
 
 # Download rcedit change the windows build icon
-RUN wget https://github.com/electron/rcedit/releases/download/v1.1.1/rcedit-x64.exe -O /usr/local/bin/rcedit.exe && \
+RUN wget https://github.com/electron/rcedit/releases/download/v2.0.0/rcedit-x86.exe -O /usr/local/bin/rcedit.exe && \
     chmod +x /usr/local/bin/rcedit.exe
 
 # Initialize Wine (this creates the wine prefix and installs necessary components)
