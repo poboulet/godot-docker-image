@@ -53,7 +53,7 @@ RUN /usr/local/bin/setup_godot.sh $GODOT_VERSION $MONO
 RUN godot --headless --quit
 
 # Set rcedit path in editor settings
-RUN sed -i 's|export/windows/rcedit = ""|export/windows/rcedit = "/usr/local/bin/rcedit.exe"|g' ~/.config/godot/editor_settings-4.4.tres
+RUN echo 'export/windows/rcedit = "/usr/local/bin/rcedit.exe"' >> ~/.config/godot/editor_settings-4.4.tres
 
 # Set the default command (if needed)
 CMD ["/bin/bash"]
