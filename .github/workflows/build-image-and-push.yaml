@@ -19,12 +19,16 @@ jobs:
           - true
           - false
 
-    env:
-      GODOT_VERSION: 4.4.1
-
     steps:
       - name: Check out the repo
         uses: actions/checkout@v4
+
+      - name: Get Godot version from Dockerfile
+        id: godot-version
+        run: |
+          VERSION=$(grep "ARG GODOT_VERSION=" Dockerfile.godot-dev | cut -d'=' -f2)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Godot version: $VERSION"
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
@@ -48,7 +52,7 @@ jobs:
           context: .
           file: ./Dockerfile.godot-dev
           push: true
-          tags: ${{ env.tag_name }}:${{ env.GODOT_VERSION }}, ${{ env.tag_name }}:latest
+          tags: ${{ env.tag_name }}:${{ steps.godot-version.outputs.version }}, ${{ env.tag_name }}:latest
           build-args: |
-            GODOT_VERSION=${{ env.GODOT_VERSION }}
+            GODOT_VERSION=${{ steps.godot-version.outputs.version }}
             MONO=${{ matrix.mono }}
