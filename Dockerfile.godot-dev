@@ -1,6 +1,6 @@
 FROM ubuntu:latest
 
-ARG GODOT_VERSION=4.4.1
+ARG GODOT_VERSION=4.5.1
 ARG MONO=false
 
 RUN dpkg --add-architecture i386
