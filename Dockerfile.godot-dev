@@ -18,7 +18,7 @@ RUN apt-get update && \
         wine \
         wine32 \
         gvfs-backends \
-        mesa-utils && \
+        mesa-utils \
         openssh-client && \
     bash -c '\
         if [ "$MONO" = "true" ]; then \
