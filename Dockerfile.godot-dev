@@ -19,7 +19,6 @@ RUN apt-get update && \
         wine32 \
         gvfs-backends \
         mesa-utils && \
-        ssh && \
     bash -c '\
         if [ "$MONO" = "true" ]; then \
             apt-get install -y mono-complete && \
