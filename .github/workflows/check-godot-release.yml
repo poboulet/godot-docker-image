@@ -1,0 +1,84 @@
+name: Check Godot Release
+
+on:
+  schedule:
+    # Run daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch: # Allow manual trigger
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  check-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Get latest Godot stable release
+        id: godot-release
+        run: |
+          # Fetch the latest stable release from Godot GitHub
+          LATEST_VERSION=$(curl -s https://api.github.com/repos/godotengine/godot-builds/releases | \
+            jq -r '[.[] | select(.tag_name | contains("-stable")) | select(.prerelease == false)] | .[0].tag_name' | \
+            sed 's/-stable$//')
+          
+          echo "Latest Godot version: $LATEST_VERSION"
+          echo "version=$LATEST_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Get current version from Dockerfile
+        id: current-version
+        run: |
+          CURRENT_VERSION=$(grep "ARG GODOT_VERSION=" Dockerfile.godot-dev | cut -d'=' -f2)
+          echo "Current version: $CURRENT_VERSION"
+          echo "version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Compare versions
+        id: compare
+        run: |
+          LATEST="${{ steps.godot-release.outputs.version }}"
+          CURRENT="${{ steps.current-version.outputs.version }}"
+          
+          if [ "$LATEST" != "$CURRENT" ]; then
+            echo "New version available: $LATEST (current: $CURRENT)"
+            echo "update_needed=true" >> $GITHUB_OUTPUT
+          else
+            echo "Already on latest version: $CURRENT"
+            echo "update_needed=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Update Dockerfile
+        if: steps.compare.outputs.update_needed == 'true'
+        run: |
+          NEW_VERSION="${{ steps.godot-release.outputs.version }}"
+          sed -i "s/ARG GODOT_VERSION=.*/ARG GODOT_VERSION=$NEW_VERSION/" Dockerfile.godot-dev
+          echo "Updated GODOT_VERSION to $NEW_VERSION"
+
+      - name: Create Pull Request
+        if: steps.compare.outputs.update_needed == 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "chore: update Godot to version ${{ steps.godot-release.outputs.version }}"
+          branch: godot-version-${{ steps.godot-release.outputs.version }}
+          delete-branch: true
+          title: "Update Godot to version ${{ steps.godot-release.outputs.version }}"
+          body: |
+            ## 🚀 New Godot Release Available
+            
+            This PR updates the Godot version from `${{ steps.current-version.outputs.version }}` to `${{ steps.godot-release.outputs.version }}`.
+            
+            ### Changes
+            - Updated `GODOT_VERSION` in `Dockerfile.godot-dev`
+            
+            ### Release Notes
+            Check the official Godot release notes: https://github.com/godotengine/godot-builds/releases/tag/${{ steps.godot-release.outputs.version }}-stable
+            
+            ---
+            🤖 This PR was automatically created by the Godot Release Check workflow.
+          labels: |
+            godot-update
+            automated
+          assignees: ${{ github.repository_owner }}
