@@ -1,9 +1,13 @@
 name: Build and Push Docker Image
 
 on:
-  push:
-    branches:
-      - "main"
+  workflow_dispatch:
+    inputs:
+      godot_version:
+        description: 'Godot version to build'
+        required: true
+        default: '4.5.1'
+        type: string
 
 jobs:
   build-and-push:
@@ -20,8 +24,8 @@ jobs:
           - false
 
     env:
-      GODOT_VERSION: 4.4.1
-
+      GODOT_VERSION: ${{ inputs.godot_version || '4.5.1' }}
+      
     steps:
       - name: Check out the repo
         uses: actions/checkout@v4

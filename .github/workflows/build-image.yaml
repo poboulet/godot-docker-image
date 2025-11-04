@@ -18,14 +18,17 @@ jobs:
         mono:
           - true
           - false
-
-    env:
-      GODOT_VERSION: 4.4.1
-
     steps:
       - name: Check out the repo
         uses: actions/checkout@v4
 
+      - name: Get latest Godot version
+        id: godot-version
+        run: |
+          GODOT_VERSION=$(curl -s https://api.github.com/repos/godotengine/godot/releases/latest | jq -r '.tag_name' | sed 's/^v//' | sed 's/-stable//')
+          echo "GODOT_VERSION=$GODOT_VERSION" >> $GITHUB_ENV
+          echo "Using Godot version: $GODOT_VERSION"
+          
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:
