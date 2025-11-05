@@ -30,13 +30,17 @@ jobs:
           echo "$ALL_VERSIONS" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
-      - name: Get all tags in the repository
+      - name: Get all tags from repository via GitHub API
         id: git-tags
         run: |
-          GIT_TAGS=$(git tag)
-          echo "Git tags in repo: $GIT_TAGS"
+          # Fetch all tags from the GitHub repository
+          REPO_TAGS=$(curl -s "https://api.github.com/repos/poboulet/godot-docker-image/tags?per_page=100" | \
+            jq -r '.[].name')
+          
+          echo "Repository tags:"
+          echo "$REPO_TAGS"
           echo "git_tags<<EOF" >> $GITHUB_OUTPUT
-          echo "$GIT_TAGS" >> $GITHUB_OUTPUT
+          echo "$REPO_TAGS" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Find missing versions
