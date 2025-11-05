@@ -18,93 +18,61 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Get all Godot stable releases
-        id: godot-releases
+        id: godot-release
         run: |
-          # Fetch all stable releases from Godot GitHub (paginated to get more results)
-          GODOT_VERSIONS=$(curl -s "https://api.github.com/repos/godotengine/godot-builds/releases?per_page=100" | \
-            jq -r '[.[] | select(.tag_name | contains("-stable")) | select(.prerelease == false) | .tag_name] | .[]' | \
+          # Fetch all stable releases from Godot GitHub
+          ALL_VERSIONS=$(curl -s "https://api.github.com/repos/godotengine/godot-builds/releases?per_page=100" | \
+            jq -r '[.[] | select(.tag_name | contains("-stable")) | select(.prerelease == false)] | .[].tag_name' | \
             sed 's/-stable$//')
-          
-          echo "Available Godot stable versions:"
-          echo "$GODOT_VERSIONS"
-          
-          # Save to file for later processing
-          echo "$GODOT_VERSIONS" > /tmp/godot_versions.txt
 
-      - name: Get existing releases in this repository
-        id: existing-releases
+          echo "Godot stable versions: $ALL_VERSIONS"
+          echo "versions<<EOF" >> $GITHUB_OUTPUT
+          echo "$ALL_VERSIONS" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Get all tags in the repository
+        id: git-tags
         run: |
-          # Fetch all tags/releases from this repository
-          EXISTING_TAGS=$(git tag -l)
-          
-          echo "Existing tags in repository:"
-          echo "$EXISTING_TAGS"
-          
-          # Save to file for later processing
-          echo "$EXISTING_TAGS" > /tmp/existing_tags.txt
+          GIT_TAGS=$(git tag)
+          echo "Git tags in repo: $GIT_TAGS"
+          echo "git_tags<<EOF" >> $GITHUB_OUTPUT
+          echo "$GIT_TAGS" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Find missing versions
-        id: find-missing
+        id: missing-versions
         run: |
-          # Find versions that exist in Godot but not in our repository
-          MISSING_VERSIONS=""
+          # Get versions from previous steps
+          ALL_VERSIONS="${{ steps.godot-release.outputs.versions }}"
+          GIT_TAGS="${{ steps.git-tags.outputs.git_tags }}"
           
-          while IFS= read -r godot_version; do
-            if ! grep -q "^${godot_version}$" /tmp/existing_tags.txt; then
+          # Find versions that are in ALL_VERSIONS but NOT in GIT_TAGS
+          MISSING_VERSIONS=""
+          while IFS= read -r version; do
+            if [ -n "$version" ] && ! echo "$GIT_TAGS" | grep -q "^${version}$"; then
               if [ -z "$MISSING_VERSIONS" ]; then
-                MISSING_VERSIONS="$godot_version"
+                MISSING_VERSIONS="$version"
               else
-                MISSING_VERSIONS="$MISSING_VERSIONS $godot_version"
+                MISSING_VERSIONS="${MISSING_VERSIONS}"$'\n'"${version}"
               fi
             fi
-          done < /tmp/godot_versions.txt
+          done <<< "$ALL_VERSIONS"
           
+          echo "Missing versions (in Godot but not in repo):"
+          echo "$MISSING_VERSIONS"
+          
+          # Count missing versions
           if [ -n "$MISSING_VERSIONS" ]; then
-            echo "Missing versions: $MISSING_VERSIONS"
-            echo "missing_versions=$MISSING_VERSIONS" >> $GITHUB_OUTPUT
+            COUNT=$(echo "$MISSING_VERSIONS" | wc -l)
+            echo "Found $COUNT missing version(s)"
+            echo "missing_versions<<EOF" >> $GITHUB_OUTPUT
+            echo "$MISSING_VERSIONS" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
             echo "has_missing=true" >> $GITHUB_OUTPUT
-            
-            # Get the first (latest) missing version
-            FIRST_MISSING=$(echo "$MISSING_VERSIONS" | awk '{print $1}')
-            echo "first_missing=$FIRST_MISSING" >> $GITHUB_OUTPUT
+            echo "count=$COUNT" >> $GITHUB_OUTPUT
           else
             echo "No missing versions found"
             echo "has_missing=false" >> $GITHUB_OUTPUT
+            echo "count=0" >> $GITHUB_OUTPUT
           fi
-
-      - name: Update Dockerfile for first missing version
-        if: steps.find-missing.outputs.has_missing == 'true'
-        run: |
-          NEW_VERSION="${{ steps.find-missing.outputs.first_missing }}"
-          sed -i "s/ARG GODOT_VERSION=.*/ARG GODOT_VERSION=$NEW_VERSION/" Dockerfile.godot-dev
-          echo "Updated GODOT_VERSION to $NEW_VERSION"
-
-      - name: Create Pull Request
-        if: steps.find-missing.outputs.has_missing == 'true'
-        uses: peter-evans/create-pull-request@v6
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: "chore: update Godot to version ${{ steps.find-missing.outputs.first_missing }}"
-          branch: godot-version-${{ steps.find-missing.outputs.first_missing }}
-          delete-branch: true
-          title: "Update Godot to version ${{ steps.find-missing.outputs.first_missing }}"
-          body: |
-            ## 🚀 New Godot Release Available
-            
-            This PR updates the Godot version to `${{ steps.find-missing.outputs.first_missing }}`.
-            
-            ### Changes
-            - Updated `GODOT_VERSION` in `Dockerfile.godot-dev`
-            
-            ### Release Notes
-            Check the official Godot release notes: https://github.com/godotengine/godot-builds/releases/tag/${{ steps.find-missing.outputs.first_missing }}-stable
-            
-            ### Other Missing Versions
-            ${{ steps.find-missing.outputs.missing_versions }}
-            
-            ---
-            🤖 This PR was automatically created by the Godot Release Check workflow.
-          labels: |
-            godot-update
-            automated
-          assignees: ${{ github.repository_owner }}
+    
