@@ -1,4 +1,4 @@
-FROM ubuntu:latest
+FROM debian:bookworm-slim
 
 ARG GODOT_VERSION=4.4.1
 ARG MONO=false
