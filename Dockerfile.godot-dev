@@ -36,7 +36,7 @@ RUN wget https://github.com/electron/rcedit/releases/download/v2.0.0/rcedit-x86.
 
 # Initialize Wine (this creates the wine prefix and installs necessary components)
 RUN wine --version && \
-    wineboot --init
+    xvfb-run -a wineboot --init
 
 # Set environment variables to prevent runtime errors
 ENV XDG_RUNTIME_DIR=/tmp/runtime
