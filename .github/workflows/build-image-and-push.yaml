@@ -14,16 +14,20 @@ jobs:
       - name: Check out the repo
         uses: actions/checkout@v4
       
-      - name: Generate matrix from versions file
+      - name: Read Godot versions from file
+        id: read-versions
+        run: |
+          VERSIONS=$(cat .github/godot-versions.txt | grep -v '^#' | grep -v '^$')
+          echo "Found versions: $VERSIONS"
+          echo "versions=$VERSIONS" >> $GITHUB_OUTPUT
+      
+      - name: Generate matrix from versions
         id: set-matrix
         run: |
-          # Read versions from file and create matrix combinations
-          VERSIONS=$(cat .github/godot-versions.txt | grep -v '^#' | grep -v '^$')
-          
           # Build JSON matrix with version x mono combinations
           MATRIX_JSON='{"include":['
           FIRST=true
-          for VERSION in $VERSIONS; do
+          for VERSION in ${{ steps.read-versions.outputs.versions }}; do
             for MONO in false true; do
               if [ "$FIRST" = true ]; then
                 FIRST=false
@@ -65,16 +69,30 @@ jobs:
         run: |
           if [ "${{ matrix.mono }}" = "true" ]; then
             echo "tag_name=ghcr.io/${{ github.repository_owner }}/godot-dev-mono" >> $GITHUB_ENV
+            echo "Using mono tag"
           else
             echo "tag_name=ghcr.io/${{ github.repository_owner }}/godot-dev" >> $GITHUB_ENV
+            echo "Using standard tag"
           fi
 
-      - name: Build and push Godot Docker image
+      - name: Build Godot Docker image
         uses: docker/build-push-action@v5
         with:
           context: .
           file: ./Dockerfile.godot-dev
-          push: ${{ github.ref == 'refs/heads/main' }}
+          push: false
+          tags: ${{ env.tag_name }}:${{ matrix.version }}, ${{ env.tag_name }}:latest
+          build-args: |
+            GODOT_VERSION=${{ matrix.version }}
+            MONO=${{ matrix.mono }}
+      
+      - name: Push Docker image to registry
+        if: github.ref == 'refs/heads/main'
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile.godot-dev
+          push: true
           tags: ${{ env.tag_name }}:${{ matrix.version }}, ${{ env.tag_name }}:latest
           build-args: |
             GODOT_VERSION=${{ matrix.version }}
