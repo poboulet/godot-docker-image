@@ -1,13 +1,18 @@
-FROM ubuntu:latest
+FROM debian:bookworm-slim
 
 ARG GODOT_VERSION=4.4.1
 ARG MONO=false
 
-RUN dpkg --add-architecture i386
+# Set environment variables to prevent runtime errors
+ENV XDG_RUNTIME_DIR=/tmp/runtime \
+    LIBGL_ALWAYS_SOFTWARE=true \
+    DOTNET_ROOT=/root/.dotnet \
+    PATH=$PATH:$DOTNET_ROOT:$DOTNET_ROOT/tools
 
-# Install necessary packages
+# Install necessary packages and setup tools in a single layer
 # We need to run with xvfb and graphics libs because gdUnit depends on it for integration tests
-RUN apt-get update && \
+RUN dpkg --add-architecture i386 && \
+    apt-get update && \
     apt-get install -y \
         git \
         git-lfs \
@@ -25,36 +30,23 @@ RUN apt-get update && \
             apt-get install -y mono-complete && \
             wget https://dot.net/v1/dotnet-install.sh -O dotnet-install.sh && \
             chmod +x dotnet-install.sh && \
-            ./dotnet-install.sh --channel 9.0; \
+            ./dotnet-install.sh --channel 9.0 && \
+            rm -f dotnet-install.sh; \
         fi' && \
-    rm -rf /var/lib/apt/lists/*
-
-
-# Download rcedit change the windows build icon
-RUN wget https://github.com/electron/rcedit/releases/download/v2.0.0/rcedit-x86.exe -O /usr/local/bin/rcedit.exe && \
-    chmod +x /usr/local/bin/rcedit.exe
-
-# Initialize Wine (this creates the wine prefix and installs necessary components)
-RUN wine --version && \
-    wineboot --init
-
-# Set environment variables to prevent runtime errors
-ENV XDG_RUNTIME_DIR=/tmp/runtime
-ENV LIBGL_ALWAYS_SOFTWARE=true
-ENV DOTNET_ROOT=/root/.dotnet
-ENV PATH=$PATH:$DOTNET_ROOT:$DOTNET_ROOT/tools
-RUN mkdir -p /tmp/runtime
+    wget https://github.com/electron/rcedit/releases/download/v2.0.0/rcedit-x86.exe -O /usr/local/bin/rcedit.exe && \
+    chmod +x /usr/local/bin/rcedit.exe && \
+    wine --version && \
+    xvfb-run -a wineboot --init && \
+    mkdir -p /tmp/runtime && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # Install Godot and export templates
 COPY setup_godot.sh /usr/local/bin/setup_godot.sh
-RUN chmod +x /usr/local/bin/setup_godot.sh
-RUN /usr/local/bin/setup_godot.sh $GODOT_VERSION $MONO
-
-# Run Godot once to create editor settings
-RUN godot --headless --quit
-
-# Set rcedit path in editor settings
-RUN echo 'export/windows/rcedit = "/usr/local/bin/rcedit.exe"' >> ~/.config/godot/editor_settings-4.4.tres
+RUN chmod +x /usr/local/bin/setup_godot.sh && \
+    /usr/local/bin/setup_godot.sh $GODOT_VERSION $MONO && \
+    godot --headless --quit && \
+    echo 'export/windows/rcedit = "/usr/local/bin/rcedit.exe"' >> ~/.config/godot/editor_settings-4.4.tres
 
 # Set the default command (if needed)
 CMD ["/bin/bash"]

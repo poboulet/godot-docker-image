@@ -3,11 +3,27 @@ name: Build and Push Docker Image
 on:
   push:
     branches:
-      - "skip"
+      - "**"
 
 jobs:
-  build-and-push:
-    name: "Build and push Docker image ${{ matrix.mono == true && '(Mono)' || ''}}"
+  setup-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      versions: ${{ steps.read-versions.outputs.versions }}
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+      
+      - name: Read Godot versions from file
+        id: read-versions
+        run: |
+          VERSIONS=$(cat .github/godot-versions.txt | grep -v '^#' | grep -v '^$' | jq -R -s -c 'split("\n")[:-1]')
+          echo "Found versions: $VERSIONS"
+          echo "versions=$VERSIONS" >> $GITHUB_OUTPUT
+
+  build-and-push-standard:
+    name: "Build and push Docker image v${{ matrix.version }}"
+    needs: setup-matrix
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -15,20 +31,11 @@ jobs:
 
     strategy:
       matrix:
-        mono:
-          - true
-          - false
+        version: ${{ fromJson(needs.setup-matrix.outputs.versions) }}
 
     steps:
       - name: Check out the repo
         uses: actions/checkout@v4
-
-      - name: Get Godot version from Dockerfile
-        id: godot-version
-        run: |
-          VERSION=$(grep "ARG GODOT_VERSION=" Dockerfile.godot-dev | cut -d'=' -f2)
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "Godot version: $VERSION"
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
@@ -38,21 +45,78 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set image tag
-        id: tag
         run: |
-          if [ "${{ matrix.mono }}" = "true" ]; then
-            echo "tag_name=ghcr.io/${{ github.repository_owner }}/godot-dev-mono" >> $GITHUB_ENV
-          else
-            echo "tag_name=ghcr.io/${{ github.repository_owner }}/godot-dev" >> $GITHUB_ENV
-          fi
+          echo "tag_name=ghcr.io/${{ github.repository_owner }}/godot-dev" >> $GITHUB_ENV
 
-      - name: Build and push Godot Docker image
+      - name: Build Godot Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile.godot-dev
+          push: false
+          tags: ${{ env.tag_name }}:${{ matrix.version }}, ${{ env.tag_name }}:latest
+          build-args: |
+            GODOT_VERSION=${{ matrix.version }}
+            MONO=false
+      
+      - name: Push Docker image to registry
+        if: github.ref == 'refs/heads/main'
         uses: docker/build-push-action@v5
         with:
           context: .
           file: ./Dockerfile.godot-dev
           push: true
-          tags: ${{ env.tag_name }}:${{ steps.godot-version.outputs.version }}, ${{ env.tag_name }}:latest
+          tags: ${{ env.tag_name }}:${{ matrix.version }}, ${{ env.tag_name }}:latest
           build-args: |
-            GODOT_VERSION=${{ steps.godot-version.outputs.version }}
-            MONO=${{ matrix.mono }}
+            GODOT_VERSION=${{ matrix.version }}
+            MONO=false
+
+  build-and-push-mono:
+    name: "Build and push Docker image v${{ matrix.version }} (Mono)"
+    needs: setup-matrix
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+
+    strategy:
+      matrix:
+        version: ${{ fromJson(needs.setup-matrix.outputs.versions) }}
+
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set image tag
+        run: |
+          echo "tag_name=ghcr.io/${{ github.repository_owner }}/godot-dev-mono" >> $GITHUB_ENV
+
+      - name: Build Godot Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile.godot-dev
+          push: false
+          tags: ${{ env.tag_name }}:${{ matrix.version }}, ${{ env.tag_name }}:latest
+          build-args: |
+            GODOT_VERSION=${{ matrix.version }}
+            MONO=true
+      
+      - name: Push Docker image to registry
+        if: github.ref == 'refs/heads/main'
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile.godot-dev
+          push: true
+          tags: ${{ env.tag_name }}:${{ matrix.version }}, ${{ env.tag_name }}:latest
+          build-args: |
+            GODOT_VERSION=${{ matrix.version }}
+            MONO=true
