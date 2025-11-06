@@ -6,19 +6,19 @@ MONO=$2
 
 # Set URLs and directories based on whether Mono is enabled
 if [ "$MONO" = "true" ]; then
-    DOWNLOAD_URL="https://github.com/godotengine/godot-builds/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_mono_linux_x86_64.zip"
-    TEMPLATE_URL="https://github.com/godotengine/godot-builds/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_mono_export_templates.tpz"
-    INSTALL_DIR="/usr/local/bin/Godot_v${GODOT_VERSION}-stable_mono_linux_x86_64"
-    TEMPLATE_DIR="/godot/export_templates/${GODOT_VERSION}.stable.mono/"
+    DOWNLOAD_URL="https://github.com/godotengine/godot-builds/releases/download/${GODOT_VERSION}/Godot_v${GODOT_VERSION}_mono_linux_x86_64.zip"
+    TEMPLATE_URL="https://github.com/godotengine/godot-builds/releases/download/${GODOT_VERSION}/Godot_v${GODOT_VERSION}_mono_export_templates.tpz"
+    INSTALL_DIR="/usr/local/bin/Godot_v${GODOT_VERSION}_mono_linux_x86_64"
+    TEMPLATE_DIR="/godot/export_templates/${GODOT_VERSION}.mono/"
     SYMLINK_TEMPLATE_DIR="/root/.local/share/godot/export_templates/"
-    EXECUTABLE_NAME="Godot_v${GODOT_VERSION}-stable_mono_linux.x86_64"
+    EXECUTABLE_NAME="Godot_v${GODOT_VERSION}_mono_linux.x86_64"
 else
-    DOWNLOAD_URL="https://github.com/godotengine/godot-builds/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
-    TEMPLATE_URL="https://github.com/godotengine/godot-builds/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_export_templates.tpz"
+    DOWNLOAD_URL="https://github.com/godotengine/godot-builds/releases/download/${GODOT_VERSION}/Godot_v${GODOT_VERSION}_linux.x86_64.zip"
+    TEMPLATE_URL="https://github.com/godotengine/godot-builds/releases/download/${GODOT_VERSION}/Godot_v${GODOT_VERSION}_export_templates.tpz"
     INSTALL_DIR="/usr/local/bin"
-    TEMPLATE_DIR="/godot/export_templates/${GODOT_VERSION}.stable/"
+    TEMPLATE_DIR="/godot/export_templates/${GODOT_VERSION/"
     SYMLINK_TEMPLATE_DIR="/root/.local/share/godot/export_templates/"
-    EXECUTABLE_NAME="Godot_v${GODOT_VERSION}-stable_linux.x86_64"
+    EXECUTABLE_NAME="Godot_v${GODOT_VERSION}_linux.x86_64"
 fi
 
 FULL_PATH="${INSTALL_DIR}/${EXECUTABLE_NAME}"
