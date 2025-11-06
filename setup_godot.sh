@@ -16,7 +16,7 @@ else
     DOWNLOAD_URL="https://github.com/godotengine/godot-builds/releases/download/${GODOT_VERSION}/Godot_v${GODOT_VERSION}_linux.x86_64.zip"
     TEMPLATE_URL="https://github.com/godotengine/godot-builds/releases/download/${GODOT_VERSION}/Godot_v${GODOT_VERSION}_export_templates.tpz"
     INSTALL_DIR="/usr/local/bin"
-    TEMPLATE_DIR="/godot/export_templates/${GODOT_VERSION/"
+    TEMPLATE_DIR="/godot/export_templates/${GODOT_VERSION}/"
     SYMLINK_TEMPLATE_DIR="/root/.local/share/godot/export_templates/"
     EXECUTABLE_NAME="Godot_v${GODOT_VERSION}_linux.x86_64"
 fi
