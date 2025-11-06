@@ -29,16 +29,3 @@ jobs:
           echo "versions<<EOF" >> $GITHUB_OUTPUT
           echo "$ALL_VERSIONS" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
-
-      - name: Get all release tags from repository via GitHub API
-        id: git-tags
-        run: |
-          # Fetch all release tags from the GitHub repository
-          REPO_TAGS=$(curl -s "https://api.github.com/repos/poboulet/godot-docker-image/releases?per_page=100" | \
-            jq -r '.[].tag_name')
-          
-          echo "Repository release tags:"
-          echo "$REPO_TAGS"
-          echo "git_tags<<EOF" >> $GITHUB_OUTPUT
-          echo "$REPO_TAGS" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT

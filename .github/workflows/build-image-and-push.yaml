@@ -17,7 +17,7 @@ jobs:
       - name: Read Godot versions from file
         id: read-versions
         run: |
-          VERSIONS=$(cat .github/godot-versions.txt | grep -v '^#' | grep -v '^$')
+          VERSIONS=$(cat .github/godot-versions.txt | grep -v '^#' | grep -v '^$' | tr '\n' ' ')
           echo "Found versions: $VERSIONS"
           echo "versions=$VERSIONS" >> $GITHUB_OUTPUT
       
