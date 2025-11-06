@@ -30,53 +30,15 @@ jobs:
           echo "$ALL_VERSIONS" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
-      - name: Get all tags from repository via GitHub API
+      - name: Get all release tags from repository via GitHub API
         id: git-tags
         run: |
-          # Fetch all tags from the GitHub repository
-          REPO_TAGS=$(curl -s "https://api.github.com/repos/poboulet/godot-docker-image/tags?per_page=100" | \
-            jq -r '.[].name')
+          # Fetch all release tags from the GitHub repository
+          REPO_TAGS=$(curl -s "https://api.github.com/repos/poboulet/godot-docker-image/releases?per_page=100" | \
+            jq -r '.[].tag_name')
           
-          echo "Repository tags:"
+          echo "Repository release tags:"
           echo "$REPO_TAGS"
           echo "git_tags<<EOF" >> $GITHUB_OUTPUT
           echo "$REPO_TAGS" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
-
-      - name: Find missing versions
-        id: missing-versions
-        run: |
-          # Get versions from previous steps
-          ALL_VERSIONS="${{ steps.godot-release.outputs.versions }}"
-          GIT_TAGS="${{ steps.git-tags.outputs.git_tags }}"
-          
-          # Find versions that are in ALL_VERSIONS but NOT in GIT_TAGS
-          MISSING_VERSIONS=""
-          while IFS= read -r version; do
-            if [ -n "$version" ] && ! echo "$GIT_TAGS" | grep -q "^${version}$"; then
-              if [ -z "$MISSING_VERSIONS" ]; then
-                MISSING_VERSIONS="$version"
-              else
-                MISSING_VERSIONS="${MISSING_VERSIONS}"$'\n'"${version}"
-              fi
-            fi
-          done <<< "$ALL_VERSIONS"
-          
-          echo "Missing versions (in Godot but not in repo):"
-          echo "$MISSING_VERSIONS"
-          
-          # Count missing versions
-          if [ -n "$MISSING_VERSIONS" ]; then
-            COUNT=$(echo "$MISSING_VERSIONS" | wc -l)
-            echo "Found $COUNT missing version(s)"
-            echo "missing_versions<<EOF" >> $GITHUB_OUTPUT
-            echo "$MISSING_VERSIONS" >> $GITHUB_OUTPUT
-            echo "EOF" >> $GITHUB_OUTPUT
-            echo "has_missing=true" >> $GITHUB_OUTPUT
-            echo "count=$COUNT" >> $GITHUB_OUTPUT
-          else
-            echo "No missing versions found"
-            echo "has_missing=false" >> $GITHUB_OUTPUT
-            echo "count=0" >> $GITHUB_OUTPUT
-          fi
-    
